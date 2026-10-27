@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Квиз</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#14301f">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f1f4ec;--ink:#14301f;--mute:#5d7366;--card:#fff;--line:#d5dccf;--ok:#1f8a4c;--bad:#c8372d;--pitch:#14301f;--onpitch:#f1f4ec;
+box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1a13;--ink:#e8efe6;--mute:#8da396;--card:#16271c;--line:#27402f;--ok:#3fbf75;--bad:#ef6a5f;--pitch:#e8efe6;--onpitch:#0e1a13}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:20px 18px 28px;min-height:100vh;display:flex;flex-direction:column}
+button{font:inherit;cursor:pointer}
+h1{font-size:34px;line-height:1.05;margin:12px 0 6px;letter-spacing:-.5px}
+.sub{color:var(--mute);margin:0 0 22px;font-size:16px}
+.grid{display:grid;gap:10px}
+.cat{display:flex;align-items:center;gap:14px;width:100%;text-align:left;font-size:18px;font-weight:700;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.cat .e{font-size:28px;width:36px;text-align:center}
+.cat small{display:block;font-weight:400;color:var(--mute);font-size:13px;margin-top:2px}
+.cat:active,.btn:active,.opt:active{transform:scale(.97)}
+.cat.mix{background:var(--pitch);color:var(--onpitch);border-color:var(--pitch)}
+.cat.mix small{color:inherit;opacity:.75}
+.bar{display:flex;justify-content:space-between;color:var(--mute);font-size:15px;margin-bottom:10px}
+.track{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:18px}
+.track i{display:block;height:100%;background:var(--pitch);transition:width .3s}
+.q{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:6px 0 16px}
+.big{font-size:80px;line-height:1.1}
+.big.t{font-size:32px;font-weight:800}
+.stmt{font-size:22px;margin-top:12px}
+.stmt.h{font-size:24px;font-weight:800;margin:0 0 14px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{color:#fff;border:0;border-radius:14px;padding:14px 12px;min-height:84px;display:flex;align-items:center;gap:10px;text-align:left;font-size:18px;font-weight:700;line-height:1.15}
+.opt span{font-size:20px;opacity:.8}
+.opts.done .opt{opacity:.3}
+.opts.done .opt.right{opacity:1;outline:4px solid var(--ink);outline-offset:2px}
+.btn{width:100%;font-size:20px;font-weight:800;padding:17px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink)}
+.btn.go{background:var(--pitch);color:var(--onpitch)}
+.btn:disabled{opacity:.4}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fb{min-height:62px;text-align:center;font-size:17px;margin:12px 0}
+.fb .v{font-weight:800;font-size:22px}
+.fb.ok .v{color:var(--ok)}.fb.no .v{color:var(--bad)}
+.val{font-size:54px;font-weight:800;margin:6px 0}
+input[type=range]{width:100%;height:36px;accent-color:var(--pitch)}
+.rng{display:flex;justify-content:space-between;color:var(--mute);font-size:14px}
+.hint{color:var(--mute);font-size:14px;margin-top:12px}
+.its{display:grid;gap:8px;margin-bottom:12px}
+.it{display:flex;align-items:center;gap:12px;text-align:left;font-size:18px;font-weight:700;padding:13px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
+.it b{min-width:28px;height:28px;border-radius:14px;border:2px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:15px}
+.it.sel{background:var(--pitch);color:var(--onpitch);border-color:var(--pitch)}
+.it.sel b{border-color:var(--onpitch)}
+.it.r{border-color:var(--ok)}.it.w{border-color:var(--bad)}
+.score{font-size:96px;font-weight:800;text-align:center;margin:26px 0 4px;letter-spacing:-2px}
+.msg{text-align:center;font-size:20px;color:var(--mute);margin-bottom:26px}
+.mist{border-top:2px solid var(--line);margin-bottom:22px}
+.mist div{padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+var N=10,COL=["#d1344b","#1f6fd1","#b87d00","#2a8a3a"],SH=["▲","◆","●","■"];
+var DATA={
+flags:{t:"Флаги",e:"🚩",m:"c",em:1,q:"Чей это флаг?",sm:"Выбери из 4 стран",d:[["🇫🇷","Франция"],["🇩🇪","Германия"],["🇮🇹","Италия"],["🇪🇸","Испания"],["🇵🇹","Португалия"],["🇳🇱","Нидерланды"],["🇧🇪","Бельгия"],["🇨🇭","Швейцария"],["🇦🇹","Австрия"],["🇸🇪","Швеция"],["🇳🇴","Норвегия"],["🇫🇮","Финляндия"],["🇩🇰","Дания"],["🇵🇱","Польша"],["🇺🇦","Украина"],["🇨🇿","Чехия"],["🇬🇷","Греция"],["🇹🇷","Турция"],["🇮🇪","Ирландия"],["🇧🇷","Бразилия"],["🇦🇷","Аргентина"],["🇲🇽","Мексика"],["🇨🇦","Канада"],["🇺🇸","США"],["🇨🇱","Чили"],["🇨🇴","Колумбия"],["🇯🇵","Япония"],["🇰🇷","Южная Корея"],["🇨🇳","Китай"],["🇮🇳","Индия"],["🇹🇭","Таиланд"],["🇰🇿","Казахстан"],["🇦🇺","Австралия"],["🇿🇦","ЮАР"],["🇪🇬","Египет"],["🇲🇦","Марокко"],["🇳🇬","Нигерия"],["🇸🇦","Саудовская Аравия"],["🇬🇧","Великобритания"]]},
+caps:{t:"Столицы",e:"🏛️",m:"c",q:"Какая у неё столица?",sm:"Выбери из 4 городов",d:[["Франция","Париж"],["Германия","Берлин"],["Италия","Рим"],["Испания","Мадрид"],["Португалия","Лиссабон"],["Нидерланды","Амстердам"],["Бельгия","Брюссель"],["Швейцария","Берн"],["Австрия","Вена"],["Швеция","Стокгольм"],["Норвегия","Осло"],["Финляндия","Хельсинки"],["Дания","Копенгаген"],["Польша","Варшава"],["Чехия","Прага"],["Греция","Афины"],["Турция","Анкара"],["Венгрия","Будапешт"],["Бразилия","Бразилиа"],["Канада","Оттава"],["Австралия","Канберра"],["Япония","Токио"],["Китай","Пекин"],["Индия","Нью-Дели"],["Казахстан","Астана"],["Египет","Каир"],["Марокко","Рабат"],["Нигерия","Абуджа"],["ЮАР","Претория"],["Перу","Лима"]]},
+club:{t:"Футбол",e:"⚽",m:"c",q:"Где играет этот клуб?",sm:"Угадай домашний стадион",d:[["Барселона","Камп Ноу"],["Реал Мадрид","Сантьяго Бернабеу"],["Атлетико Мадрид","Метрополитано"],["Манчестер Юнайтед","Олд Траффорд"],["Манчестер Сити","Этихад"],["Ливерпуль","Энфилд"],["Арсенал","Эмирейтс"],["Челси","Стэмфорд Бридж"],["Бавария","Альянц Арена"],["Боруссия Дортмунд","Сигнал Идуна Парк"],["Ювентус","Альянц Стэдиум"],["Милан","Сан-Сиро"],["Рома","Стадио Олимпико"],["Наполи","Диего Армандо Марадона"],["ПСЖ","Парк де Пренс"],["Бенфика","Эштадиу да Луш"],["Порту","Драгау"],["Аякс","Йохан Кройф Арена"],["Селтик","Селтик Парк"],["Бока Хуниорс","Бомбонера"],["Ривер Плейт","Монументаль"],["Ньюкасл","Сент-Джеймс Парк"]]},
+cars:{t:"Марки авто",e:"🚗",m:"c",q:"Из какой страны эта марка?",sm:"Угадай страну",d:[["Toyota","Япония"],["Honda","Япония"],["Mazda","Япония"],["Subaru","Япония"],["BMW","Германия"],["Audi","Германия"],["Porsche","Германия"],["Volkswagen","Германия"],["Ferrari","Италия"],["Lamborghini","Италия"],["Fiat","Италия"],["Renault","Франция"],["Peugeot","Франция"],["Bugatti","Франция"],["Volvo","Швеция"],["Škoda","Чехия"],["Ford","США"],["Tesla","США"],["Hyundai","Южная Корея"],["Kia","Южная Корея"],["Jaguar","Великобритания"],["Aston Martin","Великобритания"],["SEAT","Испания"],["Lada","Россия"]]},
+cur:{t:"Валюты",e:"💶",m:"c",q:"Какая у неё валюта?",sm:"Выбери из 4 валют",d:[["Япония","Иена"],["Великобритания","Фунт стерлингов"],["Швейцария","Швейцарский франк"],["Швеция","Шведская крона"],["Польша","Злотый"],["Чехия","Чешская крона"],["Венгрия","Форинт"],["Турция","Турецкая лира"],["Индия","Рупия"],["Китай","Юань"],["Южная Корея","Вона"],["Таиланд","Бат"],["Бразилия","Реал"],["Мексика","Песо"],["Австралия","Австралийский доллар"],["ЮАР","Рэнд"],["Казахстан","Тенге"],["Украина","Гривна"],["Израиль","Шекель"],["США","Доллар США"]]},
+years:{t:"Годы",e:"📅",m:"s",sm:"Выбери год на шкале",d:[["Первый человек в космосе (Гагарин)",1961,1900,2020,1,2,"г."],["Высадка людей на Луну",1969,1900,2020,1,2,"г."],["Падение Берлинской стены",1989,1900,2020,1,2,"г."],["Распад СССР",1991,1900,2020,1,2,"г."],["Авария на Чернобыльской АЭС",1986,1900,2020,1,2,"г."],["Затонул «Титаник»",1912,1850,2000,1,3,"г."],["Начало Второй мировой войны",1939,1850,2000,1,3,"г."],["Первый чемпионат мира по футболу",1930,1850,2000,1,3,"г."],["Колумб достиг Америки",1492,1300,1700,1,10,"г."],["Открыта Эйфелева башня",1889,1800,1950,1,5,"г."],["Первые современные Олимпийские игры",1896,1800,1950,1,5,"г."],["Выход первого iPhone",2007,1980,2025,1,1,"г."],["Основана компания Google",1998,1970,2020,1,2,"г."],["Франция впервые стала чемпионом мира по футболу",1998,1960,2025,1,2,"г."],["Аргентина выиграла ЧМ в Катаре",2022,1990,2026,1,1,"г."]]},
+nums:{t:"Сколько?",e:"🔢",m:"s",sm:"Угадай число на шкале",d:[["Сколько костей у взрослого человека?",206,100,400,1,15,""],["Сколько стран в ООН?",193,100,250,1,10,""],["Высота Эвереста",8849,5000,12000,50,250,"м"],["Высота Эйфелевой башни",330,100,600,5,30,"м"],["Сколько клавиш у пианино?",88,40,150,1,6,""],["Сколько стран в Африке?",54,20,100,1,5,""],["Сколько зубов у взрослого человека?",32,10,60,1,2,""],["Длина марафонской дистанции",42,10,100,1,2,"км"],["Скорость света",299792,100000,500000,1000,15000,"км/с"],["Сколько штатов в США?",50,20,100,1,2,""],["Сколько раз Бразилия выигрывала ЧМ по футболу?",5,0,10,1,0,""],["Население Земли (примерно)",8,4,12,1,1,"млрд"],["Глубина Марианской впадины (примерно)",11000,5000,15000,50,500,"м"]]},
+order:{t:"Порядок",e:"🔀",m:"o",sm:"Расставь по порядку",d:[["Планеты от Солнца: от ближней к дальней",["Меркурий","Венера","Земля","Марс","Юпитер"]],["Страны по площади: от самой большой",["Россия","Канада","Бразилия","Австралия","Индия"]],["События: от раннего к позднему",["Колумб достиг Америки","Французская революция","Первая мировая война","Полёт Гагарина","Падение Берлинской стены"]],["Единицы времени: от меньшей к большей",["Секунда","Минута","Час","Сутки","Неделя"]],["Победители чемпионатов мира по футболу (1998–2014): по порядку",["Франция","Бразилия","Италия","Испания","Германия"]],["Города России по населению: от большего",["Москва","Санкт-Петербург","Новосибирск","Екатеринбург","Казань"]],["Океаны по площади: от большего",["Тихий","Атлантический","Индийский","Южный","Северный Ледовитый"]],["Вершины: от самой высокой",["Эверест","К2","Килиманджаро","Эльбрус","Монблан"]]]},
+weimar:{t:"Веймарская республика",e:"🎭",m:"x",sm:"1918–1933: люди, события, даты",parts:[
+{m:"c",free:1,d:[["Кто стал первым президентом Веймарской республики?","Фридрих Эберт"],["Кто был рейхспрезидентом с 1925 года до смерти в 1934?","Пауль фон Гинденбург"],["Какой министр иностранных дел подписал Локарнские договоры?","Густав Штреземан"],["Кого назначили канцлером 30 января 1933 года?","Адольф Гитлер"],["Кто был последним канцлером перед Гитлером?","Курт фон Шлейхер"],["Какого лидера спартаковцев убили в январе 1919 года?","Роза Люксембург"],["Кто помог остановить гиперинфляцию 1923 года, возглавив Рейхсбанк?","Яльмар Шахт"]]},
+{m:"c",free:1,d:[["Какой договор 1919 года возложил на Германию вину и репарации?","Версальский договор"],["Как называется неудавшийся переворот Гитлера в 1923 году?","Пивной путч"],["Какой путч 1920 года в Берлине сорвала всеобщая забастовка?","Капповский путч"],["Как называется занятие Францией и Бельгией промышленного района Германии в 1923 году?","Оккупация Рура"],["Какой план 1924 года упорядочил выплату репараций?","План Дауэса"],["Какие договоры 1925 года признали западные границы Германии?","Локарнские договоры"],["Какой пожар в феврале 1933 года помог нацистам запретить оппозицию?","Поджог Рейхстага"]]},
+{m:"c",free:1,d:[["В каком городе в 1919 году собралось Национальное собрание?","Веймар"],["Где произошёл Пивной путч 1923 года?","Мюнхен"],["В каком городе подожгли здание Рейхстага в 1933 году?","Берлин"],["Где подписали Версальский договор?","Версаль"],["В каком швейцарском городе в 1925 году парафировали договоры о границах?","Локарно"]]},
+{m:"s",d:[["Ноябрьская революция в Германии",1918,1900,1940,1,1,"г."],["Принята Веймарская конституция",1919,1900,1940,1,1,"г."],["Гиперинфляция и Пивной путч",1923,1900,1940,1,1,"г."],["План Дауэса",1924,1900,1940,1,1,"г."],["Локарнские договоры",1925,1900,1940,1,1,"г."],["Начало Великой депрессии (Чёрный четверг)",1929,1900,1940,1,1,"г."],["Гитлер становится канцлером",1933,1900,1940,1,1,"г."]]},
+{m:"o",d:[["Веймарская республика: от начала к концу",["Ноябрьская революция","Веймарская конституция","Гиперинфляция","Мировой кризис","Гитлер становится канцлером"]],["Кризисы республики: от раннего к позднему",["Капповский путч","Оккупация Рура","План Дауэса","Локарнские договоры","Мировой кризис"]]]}
+]},
+ww1:{t:"Первая мировая",e:"🪖",m:"x",sm:"1914–1918: люди, битвы, даты",parts:[
+{m:"c",free:1,d:[["Чьё убийство в Сараеве в 1914 году стало поводом к войне?","Франц Фердинанд"],["Кто застрелил эрцгерцога в Сараеве?","Гаврило Принцип"],["Кто был кайзером Германии в начале войны?","Вильгельм II"],["Кто был российским императором в 1914 году?","Николай II"],["Какой британский премьер участвовал в Версальской конференции?","Дэвид Ллойд Джордж"],["Какой французский премьер возглавлял Версальскую конференцию?","Жорж Клемансо"],["Какой президент США выдвинул «14 пунктов»?","Вудро Вильсон"]]},
+{m:"c",free:1,d:[["Как назывался план Германии быстро разгромить Францию?","План Шлифена"],["Как назывался союз России, Франции и Великобритании?","Антанта"],["Как назывался союз Германии, Австро-Венгрии и Италии?","Тройственный союз"],["Как называется крупнейшее морское сражение войны (1916)?","Ютландское сражение"],["В каком сражении 1916 года впервые применили танки?","Битва на Сомме"],["Какой договор 1918 года вывел Россию из войны?","Брестский мир"],["Какой договор 1919 года подвёл итоги войны для Германии?","Версальский договор"]]},
+{m:"c",free:1,d:[["В каком городе убили Франца Фердинанда?","Сараево"],["У какого французского города в 1916 году шло самое долгое сражение?","Верден"],["Где в 1919 году подписали мирный договор с Германией?","Версаль"],["В каком городе подписали мир между Россией и Центральными державами?","Брест-Литовск"],["Где в 1915 году союзники безуспешно высаживались у Дарданелл?","Галлиполи"],["Где в 1918 году подписали перемирие в железнодорожном вагоне?","Компьень"]]},
+{m:"s",d:[["Убийство Франца Фердинанда",1914,1900,1940,1,1,"г."],["Битва при Вердене",1916,1900,1940,1,1,"г."],["США вступают в войну",1917,1900,1940,1,1,"г."],["Брестский мир",1918,1900,1940,1,1,"г."],["Перемирие в Компьене",1918,1900,1940,1,1,"г."],["Версальский договор",1919,1900,1940,1,1,"г."]]},
+{m:"o",d:[["Первая мировая: от раннего к позднему",["Убийство в Сараеве","Битва при Вердене","США вступают в войну","Брестский мир","Перемирие в Компьене"]],["Вступление в войну: от раннего к позднему",["Австро-Венгрия","Германия","Великобритания","Япония","США"]]]}
+]},
+ww2:{t:"Вторая мировая",e:"✈️",m:"x",sm:"1939–1945: люди, битвы, даты",parts:[
+{m:"c",free:1,d:[["Кто возглавлял нацистскую Германию в 1939–1945 годах?","Адольф Гитлер"],["Кто был премьер-министром Великобритании с 1940 года?","Уинстон Черчилль"],["Кто руководил СССР во время войны?","Иосиф Сталин"],["Какой президент США руководил страной до апреля 1945 года?","Франклин Рузвельт"],["Кто командовал союзными войсками при высадке в Нормандии?","Дуайт Эйзенхауэр"],["Какой маршал принял капитуляцию Германии в Берлине?","Георгий Жуков"],["Кто возглавлял фашистскую Италию?","Бенито Муссолини"],["Кто возглавил «Свободную Францию»?","Шарль де Голль"]]},
+{m:"c",free:1,d:[["Как называлась операция вторжения Германии в СССР?","Операция «Барбаросса»"],["Как называлась высадка союзников в Нормандии?","Операция «Оверлорд»"],["Какое соглашение 1938 года передало Германии Судетскую область?","Мюнхенское соглашение"],["Какой пакт СССР и Германия подписали в 1939 году?","Пакт Молотова — Риббентропа"],["Как называют ночь погромов 9–10 ноября 1938 года?","«Хрустальная ночь»"],["Как называется воздушное сражение 1940 года над Англией?","Битва за Британию"],["Какое сражение 1942–43 годов стало переломным на Восточном фронте?","Сталинградская битва"],["Как назывался американский проект создания атомной бомбы?","Манхэттенский проект"],["Как называют тактику быстрых танковых ударов?","Блицкриг"]]},
+{m:"c",free:1,d:[["Какая американская база была атакована 7 декабря 1941 года?","Перл-Харбор"],["Какой японский город первым подвергся атомной бомбардировке?","Хиросима"],["В каком городе судили нацистских лидеров в 1945–46 годах?","Нюрнберг"],["Где в феврале 1945 года встретились Сталин, Рузвельт и Черчилль?","Ялта"],["Какой город пережил блокаду в 1941–1944 годах?","Ленинград"],["В каком регионе Франции высадились союзники в 1944 году?","Нормандия"],["Откуда в 1940 году эвакуировали британские войска?","Дюнкерк"],["Где окружили 6-ю армию Паулюса?","Сталинград"],["Где в 1943 году прошла одна из крупнейших танковых битв?","Курск"]]},
+{m:"s",d:[["Нападение Германии на Польшу",1939,1930,1950,1,1,"г."],["Падение Франции",1940,1930,1950,1,1,"г."],["Нападение Германии на СССР",1941,1930,1950,1,1,"г."],["Нападение на Перл-Харбор",1941,1930,1950,1,1,"г."],["Победа под Сталинградом",1943,1930,1950,1,1,"г."],["Высадка в Нормандии",1944,1930,1950,1,1,"г."],["Капитуляция нацистской Германии",1945,1930,1950,1,1,"г."],["Атомная бомбардировка Хиросимы",1945,1930,1950,1,1,"г."]]},
+{m:"o",d:[["Вторая мировая: от раннего к позднему",["Нападение на Польшу","Падение Франции","Операция «Барбаросса»","Высадка в Нормандии","Капитуляция Германии"]],["Сражения: от раннего к позднему",["Битва за Британию","Перл-Харбор","Сталинградская битва","Курская битва","Высадка в Нормандии"]],["Дорога к войне: от раннего к позднему",["Версальский договор","Пивной путч","Гитлер становится канцлером","Мюнхенское соглашение","Нападение на Польшу"]]]}
+]}
+};
+var app=document.getElementById("app"),Q=[],i=0,score=0,miss=[],locked=false,cur="mix";
+function rnd(n){return Math.floor(Math.random()*n)}
+function shuffle(a){for(var k=a.length-1;k>0;k--){var j=rnd(k+1),t=a[k];a[k]=a[j];a[j]=t}return a}
+function fmt(v,u){return(u==="г."?String(v):v.toLocaleString("ru-RU"))+(u?" "+u:"")}
+function make(D,p){
+  if(D.m==="c"){
+    var all=D.d.map(function(x){return x[1]}).filter(function(x,j,a){return a.indexOf(x)===j&&x!==p[1]});
+    return{m:"c",em:D.em,a:D.free?"":p[0],q:D.free?p[0]:D.q,ans:p[1],opts:shuffle([p[1]].concat(shuffle(all).slice(0,3))),sum:p[0]+" — "+p[1]};
+  }
+  if(D.m==="s")return{m:"s",text:p[0],ans:p[1],min:p[2],max:p[3],step:p[4],tol:p[5],u:p[6],sum:p[0]+": "+fmt(p[1],p[6])};
+  var s=p[1].slice();do{shuffle(s)}while(s.join()===p[1].join());
+  return{m:"o",text:p[0],order:p[1],items:s,sum:p[0]+" "+p[1].join(" → ")};
+}
+function build(key){
+  var L={};
+  Object.keys(DATA).forEach(function(k){
+    if(key!=="mix"&&key!==k)return;
+    var D=DATA[k],r=[];
+    (D.parts||[D]).forEach(function(P){P.d.forEach(function(p){r.push({D:P,p:p})})});
+    L[k]=shuffle(r);
+  });
+  var ks=Object.keys(L),out=[];
+  while(out.length<N&&ks.length){
+    var k=ks[rnd(ks.length)],x=L[k].pop();
+    if(!x){ks.splice(ks.indexOf(k),1);continue}
+    var it=make(x.D,x.p);
+    if(it.m==="c"&&Math.random()<.25)it=tf(it);
+    out.push(it);
+  }
+  return out;
+}
+function tf(q){
+  var truth=Math.random()<.5,wr=q.opts.filter(function(o){return o!==q.ans});
+  return{m:"t",em:q.em,a:q.a,q:q.q,shown:truth?q.ans:wr[rnd(wr.length)],truth:truth,ans:q.ans,sum:q.sum};
+}
+function menu(){
+  var h='<h1>Квиз</h1><p class="sub">Выбери тему. Каждый раз новые вопросы.</p><div class="grid"><button class="cat mix" data-k="mix"><span class="e">🎲</span><span>Микс<small>Все режимы вперемешку</small></span></button>';
+  Object.keys(DATA).forEach(function(k){var D=DATA[k];h+='<button class="cat" data-k="'+k+'"><span class="e">'+D.e+'</span><span>'+D.t+'<small>'+D.sm+'</small></span></button>'});
+  app.innerHTML=h+"</div>";
+  app.querySelectorAll(".cat").forEach(function(b){b.onclick=function(){start(b.dataset.k)}});
+}
+function start(k){cur=k;Q=build(k);i=0;score=0;miss=[];show()}
+function head(q){return'<div class="q">'+(q.a?'<div class="big'+(q.em?"":" t")+'">'+q.a+"</div>":"")+'<div class="stmt'+(q.a?"":" h")+'">'+q.q+"</div>"}
+function show(){
+  var q=Q[i],body="";locked=false;
+  if(q.m==="c"){
+    body=head(q)+'</div><div class="opts" id="opts">'+
+    q.opts.map(function(o,j){return'<button class="opt" data-j="'+j+'" style="background:'+COL[j]+'"><span>'+SH[j]+'</span>'+o+'</button>'}).join("")+"</div>";
+  }else if(q.m==="t"){
+    body=head(q)+'<div class="stmt">Ответ: <b>'+q.shown+"</b></div></div>";
+  }else if(q.m==="s"){
+    var mid=Math.round((q.min+q.max)/2/q.step)*q.step;
+    body='<div class="q"><div class="stmt h">'+q.text+'</div><div class="val" id="val">'+fmt(mid,q.u)+'</div><input type="range" id="rg" min="'+q.min+'" max="'+q.max+'" step="'+q.step+'" value="'+mid+'"><div class="rng"><span>'+fmt(q.min,q.u)+'</span><span>'+fmt(q.max,q.u)+'</span></div><div class="hint">'+(q.tol?"Засчитывается, если ошибёшься не больше чем на "+fmt(q.tol,q.u):"Нужен точный ответ")+'</div></div>';
+  }else{
+    body='<div class="q" style="justify-content:flex-start"><div class="stmt h">'+q.text+'</div><div class="its" id="its"></div><div class="hint">Нажимай по порядку: 1, 2, 3…</div></div>';
+  }
+  app.innerHTML='<div class="bar"><span>Вопрос '+(i+1)+" из "+Q.length+'</span><span>Верно: '+score+'</span></div><div class="track"><i style="width:'+(i/Q.length*100)+'%"></i></div>'+body+'<div class="fb" id="fb"></div><div id="act"></div>';
+  if(q.m==="c")app.querySelectorAll(".opt").forEach(function(b){b.onclick=function(){pick(+b.dataset.j)}});
+  if(q.m==="s")slider(q);
+  if(q.m==="o")order(q);
+  if(q.m==="t")tfb(q);
+}
+function tfb(q){
+  var act=document.getElementById("act");
+  act.innerHTML='<div class="row"><button class="btn" data-v="1">Верно</button><button class="btn" data-v="0">Неверно</button></div>';
+  act.querySelectorAll("[data-v]").forEach(function(b){b.onclick=function(){
+    if(locked)return;
+    var ok=(b.dataset.v==="1")===q.truth;
+    done(ok,q,q.truth?"":"Правильный ответ: "+q.ans);
+  }});
+}
+function done(ok,q,html){
+  locked=true;if(ok)score++;else miss.push(q.sum);
+  var fb=document.getElementById("fb");fb.className="fb "+(ok?"ok":"no");
+  fb.innerHTML='<div class="v">'+(ok?"Верно!":"Неверно")+"</div>"+html;
+  var last=i===Q.length-1,act=document.getElementById("act");
+  act.innerHTML='<button class="btn go" id="nx">'+(last?"Результат":"Дальше")+"</button>";
+  document.getElementById("nx").onclick=function(){i++;last?result():show()};
+  act.scrollIntoView({block:"end"});
+}
+function pick(j){
+  if(locked)return;var q=Q[i],o=document.getElementById("opts"),bs=o.children;
+  o.classList.add("done");
+  for(var k=0;k<bs.length;k++)if(q.opts[k]===q.ans)bs[k].classList.add("right");
+  var ok=q.opts[j]===q.ans;
+  done(ok,q,ok?"":"Правильный ответ: "+q.ans);
+}
+function slider(q){
+  var rg=document.getElementById("rg"),val=document.getElementById("val"),act=document.getElementById("act");
+  rg.oninput=function(){val.textContent=fmt(+rg.value,q.u)};
+  act.innerHTML='<button class="btn go" id="go">Ответить</button>';
+  document.getElementById("go").onclick=function(){
+    var v=+rg.value,ok=Math.abs(v-q.ans)<=q.tol;rg.disabled=true;
+    done(ok,q,"Твой ответ: "+fmt(v,q.u)+"<br>Правильно: <b>"+fmt(q.ans,q.u)+"</b>");
+  };
+}
+function order(q){
+  var picks=[],its=document.getElementById("its"),act=document.getElementById("act");
+  function draw(){
+    its.innerHTML=q.items.map(function(t,j){var n=picks.indexOf(t);return'<button class="it'+(n>-1?" sel":"")+'" data-j="'+j+'"><b>'+(n>-1?n+1:"")+"</b>"+t+"</button>"}).join("");
+    its.querySelectorAll(".it").forEach(function(b){b.onclick=function(){var t=q.items[+b.dataset.j];if(!locked&&picks.indexOf(t)<0){picks.push(t);draw()}}});
+    var ck=document.getElementById("ck");if(ck)ck.disabled=picks.length<q.items.length;
+  }
+  act.innerHTML='<div class="row"><button class="btn" id="rs">Сбросить</button><button class="btn go" id="ck" disabled>Проверить</button></div>';
+  document.getElementById("rs").onclick=function(){if(!locked){picks=[];draw()}};
+  document.getElementById("ck").onclick=function(){
+    var ok=picks.join()===q.order.join();
+    its.innerHTML=picks.map(function(t,j){return'<div class="it '+(t===q.order[j]?"r":"w")+'"><b>'+(j+1)+"</b>"+t+"</div>"}).join("");
+    done(ok,q,ok?"":"Правильный порядок: "+q.order.join(" → "));
+  };
+  draw();
+}
+function result(){
+  var p=score/Q.length,m=p===1?"Идеально!":p>=.8?"Отличный результат":p>=.5?"Неплохо, можно лучше":"Попробуй ещё раз";
+  var h='<div class="score">'+score+"/"+Q.length+'</div><div class="msg">'+m+"</div>";
+  if(miss.length)h+='<div class="mist">'+miss.map(function(s){return"<div>"+s+"</div>"}).join("")+"</div>";
+  h+='<div class="row"><button class="btn go" id="again">Ещё раз</button><button class="btn" id="home">Темы</button></div>';
+  app.innerHTML=h;
+  document.getElementById("home").onclick=menu;
+  document.getElementById("again").onclick=function(){start(cur)};
+}
+menu();
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
+</script>
+</body>
+</html>
